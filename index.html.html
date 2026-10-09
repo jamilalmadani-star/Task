@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ٹاسک مینجمنٹ پورٹل</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #eef2f5; margin: 0; padding: 20px; direction: rtl; }
+        .container { max-width: 850px; margin: auto; background: #ffffff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h2, h3 { text-align: center; color: #1a252f; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #2c3e50; }
+        input, textarea, button { width: 100%; padding: 12px; border: 1px solid #bdc3c7; border-radius: 5px; box-sizing: border-box; font-size: 15px; }
+        button { background-color: #27ae60; color: white; font-weight: bold; cursor: pointer; border: none; margin-top: 5px; }
+        button:hover { opacity: 0.9; }
+        .btn-search { background-color: #8e44ad; font-size: 16px; }
+        .btn-add-line { background-color: #2980b9; margin-top: 8px; width: auto; padding: 8px 15px; font-size: 14px; }
+        .btn-submit { background-color: #2980b9; margin-top: 10px; }
+        .btn-revision { background-color: #e67e22; margin-top: 8px; }
+        .btn-complete { background-color: #27ae60; margin-top: 8px; }
+        .task-card { border: 1px solid #dcdde1; padding: 18px; border-radius: 8px; margin-top: 15px; background: #f8f9fa; position: relative; }
+        .status-badge { font-weight: bold; padding: 4px 10px; border-radius: 4px; color: white; display: inline-block; }
+        .status-PENDING { background: #f39c12; }
+        .status-SUBMITTED { background: #2980b9; }
+        .status-REVISION_NEEDED { background: #e74c3c; }
+        .status-COMPLETED { background: #27ae60; }
+        .no-task-msg { text-align: center; color: #e74c3c; font-size: 18px; font-weight: bold; margin-top: 20px; padding: 15px; background: #fdf2e9; border-radius: 5px; }
+        .hidden { display: none; }
+        
+        .task-line-item { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .task-number { background: #3498db; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; }
+        .task-input-line { background-color: #eef7fc; border: 1px solid #a3d3f2; font-weight: 500; color: #1a252f; }
+
+        .task-display-list { list-style: none; padding: 0; margin: 10px 0; }
+        .task-line-box { background: #eaf2f8; border-right: 5px solid #3498db; padding: 12px 15px; margin-bottom: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .task-line-box.completed-item { background: #e8f8f5; border-right-color: #27ae60; }
+        .task-text { font-size: 15px; color: #2c3e50; font-weight: bold; flex: 1; }
+        .time-stamp-tag { font-size: 12px; color: #27ae60; background: #d4efdf; padding: 4px 8px; border-radius: 4px; font-weight: bold; display: block; margin-top: 5px; }
+        .btn-line-complete { background: #27ae60; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; width: auto; margin: 0; font-size: 13px; }
+
+        .img-container { overflow: hidden; display: inline-block; margin-top: 10px; }
+        .zoomable { transition: transform 0.3s ease; max-width: 250px; cursor: zoom-in; border: 1px solid #ccc; border-radius: 5px; }
+        .zoomable:hover { transform: scale(2.2); position: relative; z-index: 100; }
+        
+        .proof-box { background: #fff8e7; padding: 12px; border-radius: 6px; border: 1px solid #f39c12; margin-top: 12px; }
+        .admin-controls { background: #f2f4f4; padding: 12px; border-radius: 6px; margin-top: 12px; border: 1px dashed #bdc3c7; }
+        .notification-badge { background: #e74c3c; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; font-size: 13px; margin-bottom: 10px; display: inline-block; }
+
+        .admin-mgmt-box { background: #eef9f6; border: 2px solid #27ae60; padding: 15px; border-radius: 8px; margin-top: 20px; }
+        .admin-chip { display: inline-flex; align-items: center; background: #27ae60; color: white; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; margin: 4px; }
+        .admin-chip button { background: #c0392b; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; margin-right: 8px; cursor: pointer; padding: 0; line-height: 22px; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <h2>ٹاسک مینجمنٹ پورٹل</h2>
+
+    <div style="background: #e8f4f8; padding: 20px; border-radius: 8px; border: 1px solid #3498db;">
+        <div class="form-group">
+            <label style="font-size: 16px;">اپنا اجیر کوڈ درج کریں:</label>
+            <input type="text" id="currentUserCode" placeholder="اجیر کوڈ درج کریں">
+        </div>
+        <button class="btn-search" onclick="checkMyTasks()">ٹاسک پورٹل کھولیں</button>
+    </div>
+
+    <div id="adminForm" class="hidden" style="margin-top: 25px; border-top: 2px dashed #3498db; padding-top: 15px; background: #f4f6f7; padding: 15px; border-radius: 8px;">
+        <h3>نیا ٹاسک جاری کریں (ایڈمن پورٹل)</h3>
+        <div class="form-group">
+            <label>ٹاسک دینے والے کا اجیر کوڈ (ایڈمن):</label>
+            <input type="text" id="assignerCode" readonly style="background: #e9ecef; font-weight:bold; color:#2c3e50;">
+        </div>
+
+        <div class="form-group">
+            <label>جس کو ٹاسک دیا جا رہا ہے (اجیر کوڈ):</label>
+            <input type="text" id="assigneeCode" placeholder="اجیر کوڈ درج کریں (مثلاً: 698)">
+        </div>
+
+        <div class="form-group">
+            <label>ٹاسک کی تفصیل (ہر لائن کا الگ نمبر اور مکمل کرنے کا بٹن بنے گا):</label>
+            <div id="taskLinesContainer">
+                <div class="task-line-item">
+                    <span class="task-number">1</span>
+                    <input type="text" class="task-input-line" placeholder="ٹاسک / کام درج کریں...">
+                </div>
+            </div>
+            <button type="button" class="btn-add-line" onclick="addTaskLine()">+ مزید نیا ٹاسک شامل کریں</button>
+        </div>
+
+        <div class="form-group">
+            <label>تکمیل کا ہدف (تاریخ):</label>
+            <input type="date" id="targetDate">
+        </div>
+
+        <button onclick="createTask()">ٹاسک جاری کریں</button>
+
+        <div id="superAdminSection" class="admin-mgmt-box hidden">
+            <h4 style="margin-top: 0; color: #27ae60;">👑 ایڈمن کنٹرول پینل (از مین ایڈمن 3606)</h4>
+            <div class="form-group">
+                <label>نیا ایڈمن شامل کریں (اجیر کوڈ درج کریں):</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="newAdminCode" placeholder="مثلاً: 777" style="flex:1;">
+                    <button style="width: auto; padding: 0 20px; background: #27ae60;" onclick="addNewAdmin()">ایڈمن بنائیں</button>
+                </div>
+            </div>
+            <div>
+                <label>موجودہ فعال ایڈمنز:</label>
+                <div id="adminsListArea" style="margin-top: 5px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="resultArea" style="margin-top: 25px;"></div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        databaseURL: "https://task-management-portal-252e0-default-rtdb.firebaseio.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let loggedInUser = "";
+    let activeAdminsList = ["3606"];
+
+    function getFormattedTimestamp() {
+        const now = new Date();
+        const days = ['اتوار', 'پیر', 'منگل', 'بدھ', 'جمعرات', 'جمعہ', 'ہفتہ'];
+        const dayName = days[now.getDay()];
+        let hours = now.getHours();
+        let minutes = now.getMinutes();
+        let seconds = now.getSeconds();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        minutes = minutes < 10 ? '0' + minutes : minutes;
+        seconds = seconds < 10 ? '0' + seconds : seconds;
+        const dateStr = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
+        return `${dateStr} (${dayName}) | ${hours}:${minutes}:${seconds} ${ampm}`;
+    }
+
+    function addTaskLine() {
+        const container = document.getElementById('taskLinesContainer');
+        const currentLines = container.getElementsByClassName('task-line-item').length;
+        const newNumber = currentLines + 1;
+        const div = document.createElement('div');
+        div.className = 'task-line-item';
+        div.innerHTML = `<span class="task-number">${newNumber}</span><input type="text" class="task-input-line" placeholder="ٹاسک / کام درج کریں...">`;
+        container.appendChild(div);
+    }
+
+    db.ref('admins').on('value', snapshot => {
+        const data = snapshot.val();
+        activeAdminsList = ["3606"];
+        if(data) {
+            Object.keys(data).forEach(key => {
+                if(data[key] && !activeAdminsList.includes(data[key])) {
+                    activeAdminsList.push(data[key]);
+                }
+            });
+        }
+        renderAdminsList();
+    });
+
+    function renderAdminsList() {
+        const area = document.getElementById('adminsListArea');
+        if(!area) return;
+        area.innerHTML = '';
+        activeAdminsList.forEach(code => {
+            if(code === "3606") {
+                area.innerHTML += `<span class="admin-chip">3606 (مین ایڈمن)</span>`;
+            } else {
+                area.innerHTML += `<span class="admin-chip"><button onclick="removeAdmin('${code}')">✕</button> ${code}</span>`;
+            }
+        });
+    }
+
+    function addNewAdmin() {
+        const code = document.getElementById('newAdminCode').value.trim();
+        if(!code) { alert('اجیر کوڈ درج کریں!'); return; }
+        if(activeAdminsList.includes(code)) { alert('یہ اجیر کوڈ پہلے سے ہی ایڈمن ہے!'); return; }
+        db.ref('admins').child(code).set(code, (err) => {
+            if(!err) {
+                alert(`اجیر کوڈ ${code} کو کامیابی سے ایڈمن بنا دیا گیا ہے!`);
+                document.getElementById('newAdminCode').value = '';
+            }
+        });
+    }
+
+    function removeAdmin(code) {
+        if(confirm(`کیا آپ واقعی اجیر کوڈ ${code} سے ایڈمن کا اختیار ختم کرنا چاہتے ہیں؟`)) {
+            db.ref('admins').child(code).remove(() => {
+                alert(`اجیر کوڈ ${code} سے ایڈمن کا اختیار ختم کر دیا گیا ہے۔`);
+            });
+        }
+    }
+
+    function checkMyTasks() {
+        const codeInput = document.getElementById('currentUserCode').value.trim();
+        const resultArea = document.getElementById('resultArea');
+        const adminForm = document.getElementById('adminForm');
+        const superAdminSec = document.getElementById('superAdminSection');
+        
+        resultArea.innerHTML = '<p style="text-align:center; font-weight:bold; color:#2980b9;">لائیو ڈیٹا بیس کنیکٹ ہو رہا ہے...</p>';
+        adminForm.classList.add('hidden');
+        superAdminSec.classList.add('hidden');
+
+        if(!codeInput) {
+            alert('برائے مہربانی اپنا اجیر کوڈ درج کریں!');
+            resultArea.innerHTML = '';
+            return;
+        }
+
+        loggedInUser = codeInput;
+        const isAdmin = activeAdminsList.includes(loggedInUser);
+
+        if (isAdmin) {
+            adminForm.classList.remove('hidden');
+            document.getElementById('assignerCode').value = loggedInUser;
+            if(loggedInUser === "3606") {
+                superAdminSec.classList.remove('hidden');
+            }
+        }
+
+        db.ref('tasks').on('value', (snapshot) => {
+            const data = snapshot.val();
+            resultArea.innerHTML = '';
+
+            let userTasks = [];
+            if(data) {
+                Object.keys(data).forEach(key => {
+                    let t = data[key];
+                    t.dbKey = key;
+                    if(isAdmin || t.assignee === loggedInUser) {
+                        userTasks.push(t);
+                    }
+                });
+            }
+
+            if(userTasks.length === 0) {
+                resultArea.innerHTML = `<div class="no-task-msg">اجیر کوڈ (${loggedInUser}) کے لیے کوئی آن لائن ٹاسک موجود نہیں ہے!</div>`;
+                return;
+            }
+
+            resultArea.innerHTML = `<h3>${isAdmin ? `تمام جاری کردہ ٹاسکس کا لائیو ایڈمن بورڈ (ایڈمن: ${loggedInUser})` : `اجیر کوڈ (${loggedInUser}) کا پورٹل`}</h3>`;
+
+            userTasks.forEach(task => {
+                let fileHTML = '';
+                if(task.file) {
+                    if(task.file.type && task.file.type.startsWith('image/')) {
+                        fileHTML = `<div class="img-container"><p><strong>جمع شدہ ثبوت/تصویر:</strong></p><img src="${task.file.url}" class="zoomable" alt="Attachment"></div>`;
+                    } else {
+                        fileHTML = `<p><strong>جمع شدہ ثبوت/فائل:</strong> <a href="${task.file.url}" download="${task.file.name}">${task.file.name}</a></p>`;
+                    }
+                }
+
+                let linesHTML = '<div class="task-display-list">';
+                if(Array.isArray(task.items)) {
+                    task.items.forEach((itemObj, index) => {
+                        const isDone = itemObj.completed;
+                        linesHTML += `
+                            <div class="task-line-box ${isDone ? 'completed-item' : ''}">
+                                <div style="flex:1;">
+                                    <span class="task-text">${index + 1}. ${itemObj.text}</span>
+                                    ${isDone ? `<span class="time-stamp-tag">✓ مکمل ہونے کی تاریخ و وقت: ${itemObj.completedTime}</span>` : ''}
+                                </div>
+                                <div>
+                                    ${isDone ? 
+                                        '<span style="color:#27ae60; font-weight:bold;">✓ مکمل شدہ</span>' : 
+                                        `<button class="btn-line-complete" onclick="markLineCompleted('${task.dbKey}',${index})">کام مکمل کریں</button>`
+                                    }
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                linesHTML += '</div>';
+
+                let workerActionHTML = '';
+                if (loggedInUser === task.assignee) {
+                    workerActionHTML = `
+                        <div class="proof-box">
+                            <label><strong>کام کا ثبوت یا فائل اپ لوڈ کریں:</strong></label>
+                            <input type="file" id="proofFile_${task.dbKey}" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg">
+                            <button class="btn-submit" onclick="submitWorkWithProof('${task.dbKey}')">کام مکمل کر کے ثبوت محفوظ کریں (Save & Submit)</button>
+                        </div>
+                    `;
+                }
+
+                let adminActionHTML = '';
+                if (isAdmin) {
+                    adminActionHTML = `
+                        <div class="admin-controls">
+                            <p style="margin: 0 0 5px 0; font-weight: bold; color: #2c3e50;">ایڈمن کنٹرولز (از ${loggedInUser}):</p>
+                            <button class="btn-add-line" onclick="addMoreTaskToExisting('${task.dbKey}')">+ اس ٹاسک میں مزید کام شامل کریں</button>
+                            <button class="btn-revision" onclick="updateStatus('${task.dbKey}', 'REVISION_NEEDED')">غلطی کی نشاندہی کریں (Needs Revision)</button>
+                            <button class="btn-complete" onclick="markAllCompleted('${task.dbKey}')">تمام پورٹل فائنل کلوز کریں</button>
+                        </div>
+                    `;
+                }
+
+                resultArea.innerHTML += `
+                    <div class="task-card">
+                        ${task.updatedNotice ? `<div class="notification-badge">🔔 نوٹس: ${task.updatedNotice}</div>` : ''}
+                        <p><strong>ٹاسک دینے والا (ایڈمن):</strong> ${task.assigner || '3606'}</p>
+                        <p><strong>ٹاسک حاصل کرنے والا (اجیر کوڈ):</strong> ${task.assignee}</p>
+                        <p><strong>تخلیق کا وقت اور دن:</strong> ${task.created}</p>
+                        <p><strong>تکمیل کا ہدف (تاریخ):</strong> ${task.target}</p>
+                        <p><strong>ٹاسک کی تفصیل:</strong></p>
+                        ${linesHTML}
+                        ${fileHTML}
+                        <p><strong>حالت:</strong> <span class="status-badge status-${task.status}">${task.status}</span></p>
+                        ${task.revisionNote ? `<p style="color:red; background:#fadbd8; padding:8px; border-radius:5px;"><strong>غلطی / ریویژن نوٹس (از ایڈمن):</strong> ${task.revisionNote}</p>` : ''}
+                        ${workerActionHTML}
+                        ${adminActionHTML}
+                    </div>
+                `;
+            });
+        });
+    }
+
+    function createTask() {
+        const assignee = document.getElementById('assigneeCode').value.trim();
+        const target = document.getElementById('targetDate').value;
+        const inputLines = document.querySelectorAll('.task-input-line');
+        let itemsList = [];
+        inputLines.forEach(input => {
+            if (input.value.trim() !== '') {
+                itemsList.push({ text: input.value.trim(), completed: false, completedTime: null });
+            }
+        });
+
+        if(!assignee || itemsList.length === 0 || !target) {
+            alert('برائے مہربانی اجیر کوڈ، کم از کم ایک ٹاسک اور تاریخ درج کریں!');
+            return;
+        }
+
+        const newTask = {
+            id: Date.now(),
+            assigner: loggedInUser,
+            assignee: assignee,
+            items: itemsList,
+            created: getFormattedTimestamp(),
+            target: target,
+            status: 'PENDING',
+            file: null,
+            revisionNote: '',
+            updatedNotice: null
+        };
+
+        db.ref('tasks').push(newTask, (error) => {
+            if (error) {
+                alert("ٹاسک سیو کرنے میں مسئلہ آیا ہے!");
+            } else {
+                alert(`اجیر کوڈ ${assignee} کے لیے آن لائن ٹاسک لائیو جاری ہو گیا ہے!`);
+                document.getElementById('taskLinesContainer').innerHTML = `
+                    <div class="task-line-item">
+                        <span class="task-number">1</span>
+                        <input type="text" class="task-input-line" placeholder="ٹاسک / کام درج کریں...">
+                    </div>
+                `;
+                document.getElementById('assigneeCode').value = '';
+            }
+        });
+    }
+
+    function markLineCompleted(dbKey, lineIndex) {
+        db.ref('tasks/' + dbKey).once('value', snapshot => {
+            let task = snapshot.val();
+            if(task && task.items && task.items[lineIndex]) {
+                task.items[lineIndex].completed = true;
+                task.items[lineIndex].completedTime = getFormattedTimestamp();
+                const allDone = task.items.every(i => i.completed);
+                if(allDone) task.status = 'COMPLETED';
+                db.ref('tasks/' + dbKey).update(task);
+                alert(`لائن نمبر ${lineIndex + 1} مکمل محفوظ ہو گئی ہے!`);
+            }
+        });
+    }
+
+    function addMoreTaskToExisting(dbKey) {
+        const newItemText = prompt("اس ٹاسک کے لیے نیا مزید کام درج کریں:");
+        if(newItemText && newItemText.trim() !== "") {
+            db.ref('tasks/' + dbKey).once('value', snapshot => {
+                let task = snapshot.val();
+                if(!Array.isArray(task.items)) task.items = [];
+                task.items.push({ text: newItemText.trim(), completed: false, completedTime: null });
+                task.status = 'PENDING';
+                task.updatedNotice = `ایڈمن نے مزید کام شامل کیا ہے (${getFormattedTimestamp()})`;
+                db.ref('tasks/' + dbKey).update(task);
+                alert("نیا کام آن لائن ایڈ ہو گیا ہے!");
+            });
+        }
+    }
+
+    function markAllCompleted(dbKey) {
+        const nowTime = getFormattedTimestamp();
+        db.ref('tasks/' + dbKey).once('value', snapshot => {
+            let task = snapshot.val();
+            if(Array.isArray(task.items)) {
+                task.items.forEach(item => {
+                    if(!item.completed) {
+                        item.completed = true;
+                        item.completedTime = nowTime;
+                    }
+                });
+            }
+            task.status = 'COMPLETED';
+            db.ref('tasks/' + dbKey).update(task);
+            alert(`تمام ٹاسکس آن لائن فائنل کلوز کر دیے گئے ہیں!`);
+        });
+    }
+
+    function submitWorkWithProof(dbKey) {
+        const fileInput = document.getElementById
